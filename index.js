@@ -54,14 +54,16 @@ async function run() {
             const result = await jobApplicationCollection.find(query).toArray();
 
             //aggregation of data 
-            for(const application of result) {
+            for (const application of result) {
                 console.log(application.job_id);
-                const query1 = {_id: new ObjectId(application.job_id)};
+                const query1 = { _id: new ObjectId(application.job_id) };
                 const job = await jobCollection.findOne(query1);
-                if(job) {
+                if (job) {
                     application.title = job.title;
                     application.company = job.company;
                     application.company_logo = job.company_logo;
+                    application.location = job.location;
+                    application.jobType = job.jobType;
                 }
             }
 
@@ -71,6 +73,14 @@ async function run() {
         app.post('/job-applications', async (req, res) => {
             const application = req.body;
             const result = await jobApplicationCollection.insertOne(application);
+            res.send(result);
+        })
+
+        app.delete('/job-application/:id', async (req, res) => {
+            const id = req.params.id;
+            const email = req.query.email;
+            const query = { _id: new ObjectId(id), applicant_email: email };
+            const result = await jobApplicationCollection.deleteOne(query);
             res.send(result);
         })
 
