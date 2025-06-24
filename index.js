@@ -128,6 +128,19 @@ async function run() {
             res.send(result);
         })
 
+        app.patch('/job-application/:id', async(req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const filter = {_id : new ObjectId(id)};
+            const updateDoc = {
+                $set: {
+                    stutus: data.status,
+                }
+            }
+            const result = await jobApplicationCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
