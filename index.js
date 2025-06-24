@@ -37,8 +37,8 @@ async function run() {
 
             const email = req.query.email;
             let query = {};
-            if(email) {
-                query = {hrEmail : email}
+            if (email) {
+                query = { hr_email: email }
             }
 
             const cursor = jobCollection.find(query);
@@ -53,7 +53,7 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/jobs', async(req, res) => {
+        app.post('/jobs', async (req, res) => {
             const newJob = req.body;
             const result = await jobCollection.insertOne(newJob);
             res.send(result);
@@ -83,9 +83,40 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/job-application/jobs/:job_id', async (req, res) => {
+            const jobId = req.params.job_id;
+            const query = { job_id: jobId };
+            const result = await jobApplicationCollection.find(query).toArray();
+            res.send(result);
+        })
+
         app.post('/job-applications', async (req, res) => {
             const application = req.body;
             const result = await jobApplicationCollection.insertOne(application);
+
+            //Not the best way (use Aggregate)
+
+            const id = application.job_id;
+            const query = { _id: new ObjectId(id) };
+            const job = await jobCollection.findOne(query);
+            let newCount = 0;
+
+            if (job.applicationCount) {
+                newCount = job.applicationCount + 1;
+            } else {
+                newCount = 1;
+            }
+
+            //update the job info.
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    applicationCount: newCount
+                }
+            }
+
+            const updateResult = await jobCollection.updateOne(filter, updateDoc);
+
             res.send(result);
         })
 
