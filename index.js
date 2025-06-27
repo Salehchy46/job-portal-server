@@ -7,13 +7,36 @@ require('dotenv').config();
 const port = process.env.PORT || 3000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-
+// Common Middleware
 app.use(cors({
     origin: ['http://localhost:5173'],
     credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+//Distinctive MiddleWare
+const logger = (req, res, next) => {
+    console.log('something to verify');
+    next();
+}
+
+const verifyToken = (req, res, next) => {
+    console.log('verify');
+
+    const token = req?.cookies?.token;
+    if (!token) {
+        return res.status(401).send({ message: 'Unauthorized Access' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'Unauthorized Access' })
+        }
+        next();
+
+    })
+}
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vu0s8qh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -40,19 +63,20 @@ async function run() {
 
         //auth  related api's
 
-        app.post('/jwt', async(req, res) => {
+        app.post('/jwt', async (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.JWT_SECRET, {expiresIn: '1hr'});
+            const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1hr' });
             res
-            .cookie('token', token, {
-                httpOnly: true,
-                secure: false
-            })
-            .send({success: true});
+                .cookie('token', token, {
+                    httpOnly: true,
+                    secure: false
+                })
+                .send({ success: true });
         })
 
-        app.get('/jobs', async (req, res) => {
+        app.get('/jobs', logger, async (req, res) => {
 
+            console.log('Ehhe,,, load hocche na');
             const email = req.query.email;
             let query = {};
             if (email) {
@@ -79,12 +103,12 @@ async function run() {
 
         // job application apis
 
-        app.get('/job-application', async (req, res) => {
+        app.get('/job-application', verifyToken, async (req, res) => {
             const email = req.query.email;
             const query = { applicant_email: email };
 
             console.log('kuk kuru kuk cookies', req.cookies);
-            
+
             const result = await jobApplicationCollection.find(query).toArray();
 
             //aggregation of data 
@@ -149,10 +173,10 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/job-application/:id', async(req, res) => {
+        app.patch('/job-application/:id', async (req, res) => {
             const id = req.params.id;
             const data = req.body;
-            const filter = {_id : new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
                     stutus: data.status,

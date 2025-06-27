@@ -12,6 +12,9 @@
      origin: ['http://localhost:5173'],
      credentials: true
  }));
+
+ * in the client side:
+ * use axios get, post, delete, patch for secure apis and must use: withCredentials: true,
  * 
  * 4. validate the token in the server side:
  * if valid: provide the data
